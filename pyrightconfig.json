@@ -1,0 +1,10 @@
+{
+  "venvPath": ".",
+  "venv": ".venv",
+  "pythonVersion": "3.12",
+  "analysis": {
+    "typeCheckingMode": "basic",
+    "autoImportCompletions": true,
+    "useLibraryCodeForTypes": true
+  }
+}
