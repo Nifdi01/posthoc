@@ -1,1 +1,2 @@
-from .independent_snp_generator import IndependentSNPGenerator
+from .independent_snp import IndependentSNPGenerator
+from .beta_freq_hwe import BetaFrequencyHWEGenerator

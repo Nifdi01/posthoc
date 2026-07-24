@@ -33,7 +33,7 @@ class BaseGenomeGenerator(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def _generate_cases(self, n_smaples: int) -> np.ndarray:
+    def _generate_cases(self, n_samples: int) -> np.ndarray:
         raise NotImplementedError
 
     def _assign_causal_indices(self) -> np.ndarray:
