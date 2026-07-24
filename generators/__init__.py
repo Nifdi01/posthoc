@@ -1,0 +1,1 @@
+from .independent_snp_generator import IndependentSNPGenerator
