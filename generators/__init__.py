@@ -1,2 +1,3 @@
 from .independent_snp import IndependentSNPGenerator
 from .beta_freq_hwe import BetaFrequencyHWEGenerator
+from .balding_nichols import BaldingNicholsGenerator
