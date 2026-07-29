@@ -1,57 +1,60 @@
 from __future__ import annotations
-
+import pickle
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
-from typing import Optional
+from pathlib import Path
 
 import numpy as np
 
 
-@dataclass
-class GenomeGenerationResult:
-    genotypes: np.ndarray
-    metadata: dict = field(default_factory=dict)
+class BaseGenerator(ABC):
+    name: str = "base_generator"
 
-
-class BaseGenomeGenerator(ABC):
-    def __init__(self, genome_size: int, random_state: Optional[int] = None):
-        self.genome_size = genome_size
-        self.rng = np.random.default_rng(random_state)
+    def __init__(self):
+        self._is_fitted: bool = False
+        self._n_snps: int | None = None
 
     @abstractmethod
-    def _generate(self, n_samples: int) -> np.ndarray:
-        """Generate a genotype matrix of shape (n_samples, genome_size)."""
+    def fit(self, X: np.ndarray) -> "BaseGenerator":
         raise NotImplementedError
 
-    def generate(
-        self, n_samples: int, shuffle_snp_order: bool = False
-    ) -> GenomeGenerationResult:
-        genotypes = self._generate(n_samples)
+    @abstractmethod
+    def generate(self, n_samples: int) -> np.ndarray:
+        raise NotImplementedError
 
-        self._validate_shape(genotypes, n_samples)
+    def save(self, path: str | Path) -> None:
+        self._check_is_fitted()
+        path = Path(path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with open(path, "wb") as f:
+            pickle.dump(self.__dict__, f)
 
-        if shuffle_snp_order:
-            genotypes = self._shuffle_columns(genotypes)
+    def load(self, path: str | Path) -> "BaseGenerator":
+        path = Path(path)
+        if not path.exists():
+            raise FileNotFoundError(f"No saved generator state at path {path}")
+        with open(path, "rb") as f:
+            state = pickle.load(f)
 
-        return GenomeGenerationResult(
-            genotypes=genotypes,
-            metadata=self._build_metadata(),
-        )
+        for key, value in state.items():
+            setattr(self, key, value)
 
-    def _validate_shape(self, arr: np.ndarray, n_samples: int) -> None:
-        expected = (n_samples, self.genome_size)
+        return self
 
-        if arr.shape != expected:
+    def _mark_fitted(self, n_snps: int) -> None:
+        self._is_fitted = True
+        self._n_snps = n_snps
+
+    def _check_is_fitted(self) -> None:
+        if not self._is_fitted:
+            raise RuntimeError(f"{self.name} has not been trained yet. Call fit(X).")
+
+    def _validate_output_shape(self, X: np.ndarray, n_samples: int) -> None:
+        expected = (n_samples, self._n_snps)
+        if X.shape != expected:
             raise ValueError(
-                f"{type(self).__name__} produced shape {arr.shape}, expected {expected}"
+                f"{self.name}.generate() produced shape {X.shape}, expected {expected}"
             )
 
-    def _shuffle_columns(self, genotypes: np.ndarray) -> np.ndarray:
-        perm = self.rng.permutation(self.genome_size)
-        return genotypes[:, perm]
-
-    def _build_metadata(self) -> dict:
-        return {}
-
     def __repr__(self) -> str:
-        return f"{type(self).__name__}(genome_size={self.genome_size})"
+        status = "fitted" if self._is_fitted else "unfitted"
+        return f"<{self.__class__.__name__} name={self.name!r} status={status}>"
