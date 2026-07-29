@@ -4,6 +4,7 @@ import pandas as pd
 import pgenlib
 
 from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 
 from metadata import GenotypeMetadata
@@ -112,15 +113,10 @@ class GenotypeDataset:
 
         X = self._X
         if standardize:
-            mean = X.mean(axis=0)
-            std = X.std(axis=0)
-            std[std == 0] = 1.0
-            X_std = (X - mean) / std
-        else:
-            X_std = X
+            X = StandardScaler().fit_transform(X)
 
         pca = PCA(n_components=n_components, random_state=0)
-        components = pca.fit_transform(X_std)
+        components = pca.fit_transform(X)
         self.metadata.pca_components = components
         self.metadata.extra["pca_explained_variance_ratio"] = (
             pca.explained_variance_ratio_
