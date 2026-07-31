@@ -1,4 +1,0 @@
-from generators.classical.independent_snp import IndependentSNPGenerator
-from generators.classical.beta_freq_hwe import BetaFrequencyHWEGenerator
-from generators.classical.balding_nichols import BaldingNicholsGenerator
-from generators.classical.latent_gauss_copula import LatentGaussianCopulaGenerator
