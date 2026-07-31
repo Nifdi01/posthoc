@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "posthoc"
+version = "0.1.0"
+description = "Post-hoc attribution methods for GWAS as an alternative/complement to PLINK2/REGENIE summary stats"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = [
+  "torch>=2.2",
+  "numpy>=1.26",
+  "pandas>=2.2",
+  "scikit-learn>=1.4",
+  "shap>=0.45",
+  "captum>=0.7",
+  "click>=8.1",
+]
+
+[project.scripts]
+posthoc = "posthoc.cli:main"
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "pytest-cov", "black", "ruff"]
+genotype = ["pgenlib", "pandas-plink"]
+
+[tool.setuptools.packages.find]
+include = ["posthoc*"]
