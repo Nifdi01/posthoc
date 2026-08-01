@@ -7,8 +7,8 @@ from typing import Literal
 import numpy as np
 import torch
 from torch import nn
-from torch.utils import Dataset, DataLoader, Subset
-from sklearn.model_selection import train_test_split
+from torch.utils.data import Dataset
+
 
 logger = logging.getLogger(__name__)
 
