@@ -50,7 +50,7 @@ class GenotypeDataset(Dataset):
     def __getitem__(self, idx: int):
         x = self.genotypes[idx]
         if self.covariates is not None:
-            x = torch.cat([x, self.covariates[idx]], dim=1)
+            x = torch.cat([x, self.covariates[idx]], dim=0)
         y = self.phenotype[idx]
         return x, y
 
