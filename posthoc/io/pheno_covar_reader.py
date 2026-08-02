@@ -10,7 +10,12 @@ PLINK_MISSING = {"-9", "NA", "NaN", "nan", ""}
 
 def _read_plink_table(path: str | Path) -> pd.DataFrame:
     df = pd.read_csv(path, sep=r"\s+", dtype=str, na_values=list(PLINK_MISSING))
-    id_col = "IID" if "IID" in df.columns else df.columns[1]
+    if "IID" in df.columns:
+        id_col = "IID"
+    elif "#IID" in df.columns:
+        id_col = "#IID"
+    else:
+        id_col = df.columns[1]
     df = df.rename(columns={id_col: "IID"})
     return df
 
