@@ -17,6 +17,7 @@ dependencies = [
   "shap>=0.45",
   "captum>=0.7",
   "click>=8.1",
+  "statsmodels>=0.14",
 ]
 
 [project.scripts]

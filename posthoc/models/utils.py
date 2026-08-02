@@ -53,7 +53,10 @@ def train_model(
         len(dataset), phenotype, config.val_fraction, config.task, config.seed
     )
     train_loader = DataLoader(
-        Subset(dataset, train_idx), batch_size=config.batch_size, shuffle=True
+        Subset(dataset, train_idx),
+        batch_size=config.batch_size,
+        shuffle=True,
+        drop_last=True,
     )
     val_loader = DataLoader(
         Subset(dataset, val_idx), batch_size=config.batch_size, shuffle=False
@@ -131,4 +134,6 @@ def train_model(
         train_losses=train_losses,
         val_losses=val_losses,
         stopped_epoch=stopped_epoch,
+        train_idx=train_idx,
+        val_idx=val_idx,
     )

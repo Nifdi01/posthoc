@@ -16,6 +16,7 @@ GLM_COLUMNS = [
     "TEST",
     "IMPORTANCE",
     "P_PERM",
+    "P_CORRECTED",
     "N",
 ]
 
@@ -24,6 +25,7 @@ def write_glm(
     variant_ids: pd.DataFrame,
     importances: np.ndarray,
     p_values: np.ndarray,
+    p_corrected: np.ndarray,
     test_name: str,
     n_samples: int,
     out_path: str | Path,
@@ -37,6 +39,7 @@ def write_glm(
     out_df["TEST"] = test_name
     out_df["IMPORTANCE"] = importances
     out_df["P_PERM"] = p_values
+    out_df["P_CORRECTED"] = p_corrected
     out_df["N"] = n_samples
     out_df = out_df[GLM_COLUMNS]
 

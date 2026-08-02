@@ -24,12 +24,20 @@ cd - >/dev/null
 
 # Extract subset (chromosome 22, EUR+AMR) — structural filtering only
 plink2 --pfile "$RAW_DIR/all_hg38" \
-  --chr 22 --from-bp 20000000 --to-bp 25000000 \
+  --chr 22 --from-bp 15000000 --to-bp 25000000 \
   --keep-cat-pheno SuperPop --keep-cat-names EUR,AMR \
   --make-pgen --out "$OUT_DIR/chr22_raw"
 
-# QC filtering — this is now the authoritative, cleaned dataset
+# Assign unique variant IDs — many multiallelic/complex sites share the same
+# rsID across multiple rows (e.g. indels split into separate ref/alt records),
+# which breaks --indep-pairwise / --rm-dup downstream
 plink2 --pfile "$OUT_DIR/chr22_raw" \
+  --set-all-var-ids '@:#:$r:$a' \
+  --new-id-max-allele-len 200 missing \
+  --make-pgen --out "$OUT_DIR/chr22_raw_uniqid"
+
+# QC filtering — this is now the authoritative, cleaned dataset
+plink2 --pfile "$OUT_DIR/chr22_raw_uniqid" \
   --maf "$MAF_MIN" \
   --geno "$GENO_MAX" \
   --mind "$MIND_MAX" \

@@ -75,3 +75,5 @@ class TrainResult:
     train_losses: list[float]
     val_losses: list[float]
     stopped_epoch: int
+    train_idx: np.ndarray
+    val_idx: np.ndarray
