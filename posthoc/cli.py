@@ -370,7 +370,7 @@ def baseline(
 
     for C in (0.001, 0.01, 0.1, 1.0):
         clf = LogisticRegression(
-            penalty="l1", C=C, solver="liblinear", max_iter=2000, random_state=seed
+            l1_ratio=1, C=C, solver="liblinear", max_iter=2000, random_state=seed
         )
         clf.fit(X_train, y_train)
 

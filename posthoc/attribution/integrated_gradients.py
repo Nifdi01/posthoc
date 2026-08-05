@@ -136,7 +136,7 @@ def integrated_gradients_importance(
 
     _, p_bonf, _, _ = multipletests(p_values, method="bonferroni")
 
-    logger.info("Integrated Gradients done: {n_snps} attributed")
+    logger.info(f"Integrated Gradients done: {n_snps} attributed")
 
     return AttributionResult(
         importances=importances,
