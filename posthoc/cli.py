@@ -1,29 +1,31 @@
 from __future__ import annotations
 
 import logging
-import os
-from os.path import exists
 from pathlib import Path
 
 import click
 import numpy as np
 from dataclasses import replace
 
-from numpy.random import sample
 
-from posthoc import attribution
-from posthoc.attribution import integrated_gradients
 from posthoc.io.genotype_reader import GenotypeData, read_pgen
 from posthoc.io.pheno_covar_reader import align_samples, load_covar, load_pheno
 from posthoc.io.writer import write_glm
 from posthoc.qc.filters import run_qc
-from posthoc.models.base import TrainResult, TrainConfig
+from posthoc.models.base import TrainConfig
 from posthoc.models.mlp import MLPConfig, build_mlp
 from posthoc.models.utils import train_model
 from posthoc.attribution.integrated_gradients import (
     IntegratedGradientsConfig,
     integrated_gradients_importance,
 )
+
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import log_loss, roc_auc_score
+
+from posthoc.models.utils import make_split
+
+from posthoc.simulate import PhenotypeModel, simulate
 
 
 logger = logging.getLogger(__name__)
@@ -270,12 +272,6 @@ def run(
     )
 
     click.echo(f"Wrote results for {data.n_variants} variants to {out_path}")
-
-
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import log_loss, roc_auc_score
-
-from posthoc.models.utils import make_split
 
 
 @main.command()

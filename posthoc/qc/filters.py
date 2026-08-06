@@ -64,15 +64,15 @@ def filter_maf(data: GenotypeData, min_maf: float) -> tuple[GenotypeData, int]:
     if min_maf <= 0:
         return data, 0
     maf = compute_maf(data.genotypes)
-    keep = maf >= min_maf
-    n_dropped = int((~keep).sum())
+    keep_mask = maf >= min_maf
+    n_dropped = int((~keep_mask).sum())
     logger.info(
         "MAF filter (>= %.4f): dropping %d / %d variants",
         min_maf,
         n_dropped,
         data.n_variants,
     )
-    return _subset(data, keep), n_dropped
+    return _subset(data, keep_mask), n_dropped
 
 
 def filter_geno(data: GenotypeData, max_missing: float) -> tuple[GenotypeData, int]:
