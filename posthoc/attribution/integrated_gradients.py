@@ -20,7 +20,7 @@ class IntegratedGradientsConfig:
     batch_size: int = 256
     device: str = "cpu"
     seed: int = 0
-    task: str = "logitstic"
+    task: str = "logistic"
     baseline: str = "zero"
 
 
@@ -74,7 +74,6 @@ def integrated_gradients_importance(
     covar_t = (
         dataset.covariates.to(config.device) if dataset.covariates is not None else None
     )
-    n_covariates = covar_t[1] if covar_t is not None else 0
 
     if covar_t is not None:
         x_full = torch.cat([geno_t, covar_t], dim=1)
