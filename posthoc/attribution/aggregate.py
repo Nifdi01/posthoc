@@ -82,3 +82,12 @@ def run_multiseed_ig(
             )
         )
     return results
+
+
+def stack_mas(results: list[SeedResult]) -> np.ndarray:
+    lengths = {len(r.mas) for r in results}
+    if len(lengths) != 1:
+        raise ValueError(
+            f"MAS vectors have inconsistent lengths across seeds: {lengths}"
+        )
+    return np.stack([r.mas for r in results], axis=0)
