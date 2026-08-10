@@ -18,7 +18,6 @@ class PALConfig:
 @dataclass
 class PALResult:
     mu: np.ndarray
-    weights: np.ndarray
     amas: np.ndarray
     theta: float
     per_model_thetas: np.ndarray
@@ -40,26 +39,36 @@ def stack_mas(mas_list: list[np.ndarray]) -> np.ndarray:
 def _ld_clump(
     detected_per_model: list[np.ndarray], genotypes: np.ndarray, config: PALConfig
 ) -> tuple[list[np.ndarray], dict[int, int]]:
-    n_snps = genotypes.shape[1]
+    n_samples, n_snps = genotypes.shape
+    W = config.ld_window
+    threshold = config.ld_r2_threshold
+
+    G = genotypes.astype(np.float64)
+    G_mean = G.mean(axis=0)
+    G_std = G.std(axis=0)
+    G_std[G_std == 0] = 1.0  # To avoid division by zero
+    Z = (G - G_mean) / G_std
+
     clumped = [np.array(d, dtype=int).copy() for d in detected_per_model]
 
     for i, detected in enumerate(detected_per_model):
+        if len(detected) == 0:
+            clumped[i] = np.unique(clumped[i])
+            continue
+
         extra = []
+
         for pos in detected:
-            for offset in range(-config.ld_window, config.ld_window + 1):
-                if offset == 0:
-                    continue
-                neighbor = pos + offset
-                if neighbor < 0 or neighbor >= n_snps:
-                    continue
-                r = np.corrcoef(genotypes[:, pos], genotypes[:, neighbor])[0, 1]
-                if abs(r) > config.ld_r2_threshold:
-                    extra.append(neighbor)
+            lo = max(0, pos - W)
+            hi = min(n_snps, pos + W + 1)
+
+            r = (Z[:, pos] @ Z[:, lo:hi]) / n_samples
+            neighbors = np.arange(lo, hi)
+            mask = (abs(r) > threshold) & (neighbors != pos)
+            extra.append(neighbors[mask])
 
         if extra:
-            clumped[i] = np.unique(
-                np.concatenate([clumped[i], np.array(extra, dtype=int)])
-            )
+            clumped[i] = np.unique(np.concatenate([clumped[i]] + extra))
         else:
             clumped[i] = np.unique(clumped[i])
 
@@ -90,16 +99,10 @@ def compute_pal(
     mu = A.mean(axis=0)
 
     detected_per_model = [
-        np.nonzero(A[0] > per_model_thetas[a])[0] > 0 for a in range(n_models)
+        np.nonzero(A[a] > per_model_thetas[a])[0] for a in range(n_models)
     ]
 
     _, element_counts = _ld_clump(detected_per_model, genotypes, config)
-
-    weights = np.zeros(n_snps, dtype=np.float64)
-    for a in range(n_models):
-        weights[detected_per_model[a]] += 1.0
-
-    weights /= n_models
 
     global_theta = per_model_thetas.mean()
     amas = mu.copy()
@@ -126,7 +129,6 @@ def compute_pal(
 
     return PALResult(
         mu=mu,
-        weights=weights,
         amas=amas,
         theta=global_theta,
         per_model_thetas=per_model_thetas,
