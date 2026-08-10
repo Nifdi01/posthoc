@@ -1,6 +1,6 @@
 from __future__ import annotations
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import numpy as np
 
@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class PALConfig:
-    theta_percentile: float = 0.99
+    theta_percentile: float = 99.99
     ld_window: int = 20
     ld_r2_threshold: float = 0.5
     min_model_occurence: int | None = None
@@ -74,4 +74,64 @@ def _ld_clump(
 def compute_pal(
     mas_list: list[np.ndarray], genotypes: np.ndarray, config: PALConfig | None = None
 ) -> PALResult:
-    pass
+    config = config or PALConfig()
+    A = stack_mas(mas_list)
+    n_models, n_snps = A.shape
+
+    if genotypes.shape[1] != n_snps:
+        raise ValueError(
+            f"genotypes has {genotypes.shape[1]} SNPs but MAS vectors have {n_snps}"
+        )
+
+    per_model_thetas = np.array(
+        [np.percentile(A[a], config.theta_percentile) for a in range(n_models)]
+    )
+
+    mu = A.mean(axis=0)
+
+    detected_per_model = [
+        np.nonzero(A[0] > per_model_thetas[a])[0] > 0 for a in range(n_models)
+    ]
+
+    _, element_counts = _ld_clump(detected_per_model, genotypes, config)
+
+    weights = np.zeros(n_snps, dtype=np.float64)
+    for a in range(n_models):
+        weights[detected_per_model[a]] += 1.0
+
+    weights /= n_models
+
+    global_theta = per_model_thetas.mean()
+    amas = mu.copy()
+    above = np.nonzero(mu > global_theta)[0]
+
+    for j in above:
+        occ = element_counts.get(int(j), 0)
+        amas[j] = amas[j] * (occ / n_models)
+
+    pal_amas = np.nonzero(amas > global_theta)[0]
+
+    common = set(detected_per_model[0]) if n_models else set()
+    for a in range(1, n_models):
+        common &= set(detected_per_model[a])
+
+    pal_common = np.array(sorted(common), dtype=int)
+    logger.info(
+        "PAL: %d models, theta_percentile=%.2f -> PAL_Common=%d, PAL_AMAS=%d SNPs",
+        n_models,
+        config.theta_percentile,
+        len(pal_common),
+        len(pal_amas),
+    )
+
+    return PALResult(
+        mu=mu,
+        weights=weights,
+        amas=amas,
+        theta=global_theta,
+        per_model_thetas=per_model_thetas,
+        pal_amas=pal_amas,
+        pal_common=pal_common,
+        element_counts=element_counts,
+        n_models=n_models,
+    )
