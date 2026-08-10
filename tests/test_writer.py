@@ -18,6 +18,7 @@ def test_write_glm_format(tmp_path):
         variant_ids,
         importances=[0.1, 0.9],
         p_values=[0.5, 0.01],
+        p_corrected=[0.8, 0.05],
         test_name="IG",
         n_samples=100,
         out_path=out_path,
