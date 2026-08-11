@@ -44,7 +44,7 @@ def _sample_and_rank_null(
     return ranked
 
 
-def compue_pal_pvalues(
+def compute_pal_pvalues(
     observed_mas_list: list[np.ndarray],
     null_mas_list: list[np.ndarray],
     genotypes: np.ndarray,
