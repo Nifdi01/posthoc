@@ -7,7 +7,7 @@ import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import log_loss, roc_auc_score
 
-from posthoc.commands._shared import subset_samples
+from posthoc.commands._shared import load_and_prepare, subset_samples
 from posthoc.io import genotype_reader
 from posthoc.io.genotype_reader import read_pgen
 from posthoc.io.pheno_covar_reader import align_samples, load_covar, load_pheno
@@ -50,39 +50,21 @@ def baseline(
     seed: int,
 ) -> None:
 
-    data = read_pgen(pfile)
-    logger.info("Loaded %d samples x %d variants", data.n_samples, data.n_variants)
-
-    pheno_series = load_pheno(pheno, pheno_name=pheno_name)
-    unique_vals = set(pheno_series.dropna().unique())
-    if unique_vals <= {1.0, 2.0}:
-        pheno_series = pheno_series.map({1.0: 0.0, 2.0: 1.0})
-    elif not unique_vals <= {0.0, 1.0}:
-        raise click.UsageError(
-            f"Expected 0/1 or 1/2-coded phenotype; got {sorted(unique_vals)}"
-        )
-
-    covar_df = load_covar(covar) if covar is not None else None
-    keep_mask, align_pheno, align_covar = align_samples(
-        data.sample_ids, pheno_series, covar_df
-    )
-    ordered_ids = [sid for sid, keep in zip(data.sample_ids, keep_mask) if keep]
-    data = subset_samples(data, keep_mask, ordered_ids)
-
-    qc_results = run_qc(
-        data,
-        min_maf=min_maf,
-        max_missing=max_missing,
-        indep_pairwise_params=indep_pairwise,
-        pfile_prefix=pfile if indep_pairwise is not None else None,
+    loaded = load_and_prepare(
+        pfile,
+        pheno,
+        pheno_name,
+        covar,
+        "logistic",
+        min_maf,
+        max_missing,
+        indep_pairwise,
     )
 
-    data = qc_results.data
-    logger.info(qc_results.summary())
-
-    genotypes = data.genotypes.astype(np.float32).copy()
-    phenotype = align_pheno
-    covariates = align_covar
+    data = loaded.data
+    genotypes = data.genotypes
+    phenotype = loaded.phenotype
+    covariates = loaded.covariates
 
     train_idx, val_idx = make_split(
         len(genotypes), phenotype, val_fraction, "logistic", seed
