@@ -5,11 +5,8 @@ from pathlib import Path
 
 import click
 
-from posthoc.commands._shared import subset_samples
-from posthoc.io.genotype_reader import read_pgen
-from posthoc.io.pheno_covar_reader import align_samples, load_covar, load_pheno
+from posthoc.commands._shared import load_and_prepare
 from posthoc.io.writer import write_glm
-from posthoc.qc.filters import run_qc
 from posthoc.models.base import TrainConfig
 from posthoc.models.mlp import MLPConfig, build_mlp
 from posthoc.models.utils import train_model
@@ -116,53 +113,14 @@ def run(
         raise click.UsageError("Specify explicitly one of --logistic or --linear.")
     task = "logistic" if task_logistic else "linear"
 
-    logger.info(f"Loading genotypes from {pfile}")
-    data = read_pgen(pfile)
-    logger.info(f"Loaded {data.n_samples} samples x {data.n_variants}")
-
-    pheno_series = load_pheno(pheno, pheno_name=pheno_name)
-
-    if task == "logistic":
-        unique_vals = set(pheno_series.dropna().unique())
-        if unique_vals <= {1.0, 2.0}:
-            logger.info("Recoding PLINK-style phenotype (1=control/2=case) to (0/1)")
-            pheno_series = pheno_series.map({1.0: 0.0, 2.0: 1.0})
-        elif not unique_vals <= {0.0, 1.0}:
-            raise click.UsageError(
-                f"--logistic expects phenotype coded as 0/1 or PLINK-style 1/2; "
-                f"got values {sorted(unique_vals)}"
-            )
-
-    covar_df = load_covar(covar) if covar is not None else None
-
-    keep_mask, align_pheno, align_covar = align_samples(
-        data.sample_ids, pheno_series, covar_df
-    )
-    ordered_ids = [sid for sid, keep in zip(data.sample_ids, keep_mask) if keep]
-    data = subset_samples(data, keep_mask, ordered_ids)
-    n_dropped_samples = int((~keep_mask).sum())
-
-    logger.info(
-        "Sample alignment: dropped %d / %d samples (missing pheno/covar); %d remain",
-        n_dropped_samples,
-        len(keep_mask),
-        data.n_samples,
+    loaded = load_and_prepare(
+        pfile, pheno, pheno_name, covar, task, min_maf, max_missing, indep_pairwise
     )
 
-    qc_results = run_qc(
-        data,
-        min_maf=min_maf,
-        max_missing=max_missing,
-        indep_pairwise_params=indep_pairwise,
-        pfile_prefix=pfile if indep_pairwise is not None else None,
-    )
-
-    data = qc_results.data
-    logger.info(qc_results.summary())
-
+    data = loaded.data
     genotypes = data.genotypes
-    phenotype = align_pheno
-    covariates = align_covar
+    phenotype = loaded.phenotype
+    covariates = loaded.covariates
 
     if model_name != "mlp":
         raise click.UsageError(f"Unknown model: {model_name}")
