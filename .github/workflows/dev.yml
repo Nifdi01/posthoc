@@ -1,0 +1,61 @@
+name: Dev CI
+
+on:
+  push:
+    branches: [dev]
+  pull_request:
+    branches: [dev]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set Up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Ruff lint
+        run: ruff check .
+
+      - name: Black format check
+        run: black --check
+
+  test:
+    runs-on: ubuntu-latest
+    needs: lint
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install Plink 2
+        run: |
+          wget -q https://s3.amazonaws.com/plink2-assets/alpha6/plink2_linux_x86_64_20260504.zip -O plink2.zip
+          unzip -q plink2.zip
+          sudo mv plink2 /usr/local/bin/
+          plink2 --version
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,genotype]"
+
+      - name: Download and set up data
+        run: bash scripts/setup_test_data.sh
+
+      - name: Run tests
+        run: pytest --cov=posthoc --cov-report=term-missing
