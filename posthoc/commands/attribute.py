@@ -84,7 +84,7 @@ logger = logging.getLogger(__name__)
 @click.option(
     "--out", "out_path", required=True, type=click.Path(), help="Output .glm path."
 )
-def run(
+def attribute(
     pfile: str,
     pheno: str,
     pheno_name: str | None,
