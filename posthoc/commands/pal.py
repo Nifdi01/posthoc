@@ -7,7 +7,7 @@ import numpy as np
 
 from posthoc.commands._shared import load_and_prepare
 from posthoc.io.writer import write_pal
-from posthoc.models.base import TrainConfig
+from posthoc.models.base import TrainConfig, _ACTIVATIONS
 from posthoc.models.mlp import MLPConfig, build_mlp
 from posthoc.models.utils import train_model
 from posthoc.attribution.integrated_gradients import (
@@ -90,6 +90,9 @@ def _case_mas(
 @click.option("--epochs", "max_epochs", type=int, default=200)
 @click.option("--patience", type=int, default=15)
 @click.option("--lr", type=float, default=1e-4)
+@click.option("--activation", type=click.Choice(_ACTIVATIONS.keys()), default="relu")
+@click.option("--weight-decay", "weight_decay", type=float, default=1e-4)
+@click.option("--data-dropout", "data_dropout", is_flag=True, default=False)
 @click.option("--val-fraction", type=float, default=0.2)
 @click.option(
     "--n-steps", type=int, default=50, help="Integrated Gradients interpolation steps."
@@ -155,6 +158,9 @@ def pal(
     lr: float,
     dropout: float,
     val_fraction: float,
+    weight_decay: float,
+    data_dropout: bool,
+    activation: str,
     n_steps: int,
     ig_baseline: str,
     n_models: int,
@@ -194,13 +200,19 @@ def pal(
         model = build_mlp(
             n_snps=data.n_variants,
             n_covariates=n_covariates,
-            config=MLPConfig(hidden_dims_list, dropout=dropout),
+            config=MLPConfig(
+                hidden_dims_list,
+                dropout=dropout,
+                data_dropout=data_dropout,
+                activation=activation,
+            ),
         )
         train_config = TrainConfig(
             task=task,
             val_fraction=val_fraction,
             max_epochs=max_epochs,
             patience=patience,
+            weight_decay=weight_decay,
             lr=lr,
             device=device,
             seed=seed_i,
