@@ -1,5 +1,5 @@
-from posthoc.qc.filters import MISSING_CODE, compute_missing_rate
 from posthoc.io.genotype_reader import read_pgen
+from posthoc.qc.filters import MISSING_CODE, compute_missing_rate
 
 
 def test_missing_code_matches_reader_output(toy_missing_pfile):

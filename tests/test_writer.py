@@ -1,6 +1,6 @@
 import pandas as pd
 
-from posthoc.io.writer import write_glm, GLM_COLUMNS
+from posthoc.io.writer import GLM_COLUMNS, write_glm
 
 
 def test_write_glm_format(tmp_path):

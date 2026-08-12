@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import logging
 
-from posthoc.models.base import MLPConfig, _ACTIVATIONS
-
 import torch
 from torch import nn
+
+from posthoc.models.base import _ACTIVATIONS, MLPConfig
 
 logger = logging.getLogger(__name__)
 

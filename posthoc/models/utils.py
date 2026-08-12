@@ -2,8 +2,8 @@ import logging
 from typing import cast
 
 import numpy as np
-from sklearn.model_selection import train_test_split
 import torch
+from sklearn.model_selection import train_test_split
 from torch import nn
 from torch.utils.data import DataLoader, Subset
 
@@ -71,7 +71,7 @@ def train_model(
     best_val_loss = float("inf")
     best_state = None
     epoch_without_improvement = 0
-    train_losses, val_losses = list(), list()
+    train_losses, val_losses = [], []
     stopped_epoch = config.max_epochs
 
     for epoch in range(config.max_epochs):

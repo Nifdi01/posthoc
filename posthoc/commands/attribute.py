@@ -5,15 +5,15 @@ from pathlib import Path
 
 import click
 
+from posthoc.attribution.integrated_gradients import (
+    IntegratedGradientsConfig,
+    integrated_gradients_importance,
+)
 from posthoc.commands._shared import load_and_prepare
 from posthoc.io.writer import write_glm
 from posthoc.models.base import TrainConfig
 from posthoc.models.mlp import MLPConfig, build_mlp
 from posthoc.models.utils import train_model
-from posthoc.attribution.integrated_gradients import (
-    IntegratedGradientsConfig,
-    integrated_gradients_importance,
-)
 
 logger = logging.getLogger(__name__)
 

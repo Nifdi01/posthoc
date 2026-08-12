@@ -1,6 +1,7 @@
 # tests/conftest.py
-import subprocess
 import shutil
+import subprocess
+
 import pytest
 
 VCF_CONTENT = """##fileformat=VCFv4.2
@@ -25,6 +26,7 @@ def toy_missing_pfile(tmp_path_factory):
     result = subprocess.run(
         ["plink2", "--vcf", str(vcf_path), "--make-pgen", "--out", prefix],
         capture_output=True,
+        check=False,
         text=True,
     )
     assert result.returncode == 0, result.stderr
