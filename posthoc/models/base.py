@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Literal
 
 import numpy as np
@@ -77,3 +77,20 @@ class TrainResult:
     stopped_epoch: int
     train_idx: np.ndarray
     val_idx: np.ndarray
+
+
+@dataclass
+class MLPConfig:
+    hidden_dims: list[int] = field(default_factory=lambda: [128, 64])
+    dropout: float = 0.2
+    data_dropout: bool = False
+    batch_norm: bool = True
+    activation: str = "relu"
+
+
+_ACTIVATIONS: dict[str, type[nn.Module]] = {
+    "relu": nn.ReLU,
+    "tanh": nn.Tanh,
+    "gelu": nn.GELU,
+    "lrelu": nn.LeakyReLU,
+}

@@ -1,28 +1,13 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
+
+from posthoc.models.base import MLPConfig, _ACTIVATIONS
 
 import torch
 from torch import nn
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class MLPConfig:
-    hidden_dims: list[int] = field(default_factory=lambda: [128, 64])
-    dropout: float = 0.2
-    batch_norm: bool = True
-    activation: str = "relu"
-
-
-_ACTIVATIONS: dict[str, type[nn.Module]] = {
-    "relu": nn.ReLU,
-    "tanh": nn.Tanh,
-    "gelu": nn.GELU,
-    "lrelu": nn.LeakyReLU,
-}
 
 
 class MLP(nn.Module):
@@ -42,6 +27,8 @@ class MLP(nn.Module):
         prev_dim = input_dim
 
         for hidden_dim in self.config.hidden_dims:
+            if self.config.data_dropout:
+                layers.append(nn.Dropout(self.config.dropout))
             layers.append(nn.Linear(prev_dim, hidden_dim))
             if self.config.batch_norm:
                 layers.append(nn.BatchNorm1d(hidden_dim))
@@ -54,11 +41,12 @@ class MLP(nn.Module):
         self.head = nn.Linear(prev_dim, 1)
 
         logger.debug(
-            "Built MLP: input_dim=%d hidden_dims=%s dropout=%.2f batch_norm=%s",
+            "Built MLP: input_dim=%d hidden_dims=%s dropout=%.2f batch_norm=%s activation=%s",
             input_dim,
             self.config.hidden_dims,
             self.config.dropout,
             self.config.batch_norm,
+            self.config.activation,
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
