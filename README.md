@@ -13,6 +13,8 @@ The project currently includes:
 - PLINK2-compatible genotype input and GWAS-style outputs
 - repeated-model analysis for robust locus discovery
 
+You can find full documentation [here](https://posthoc.readthedocs.io/en/latest/)
+
 ## Table of contents
 
 - [On PostHoc](#on-posthoc)
