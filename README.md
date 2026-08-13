@@ -1,6 +1,6 @@
 # PostHoc
 
-PostHoc is a Python toolkit for post-hoc variant attribution on GWAS-scale genotype data. It trains neural models on PLINK2 genotype matrices and produces PLINK-like output tables that can be compared or merged with standard GWAS pipelines.
+PostHoc is a Python toolkit for post-hoc variant attribution on GWAS-scale genotype data. It trains neural models on PLINK2 genotype matrices and produces PLINK-like output tables that can be compared or merged with standard GWAS pipelines. This project is still **under development**.
 
 PostHoc builds upon the neural-network attribution framework introduced by Yelmen et al. [1] for identifying genome-wide association signals from artificial neural networks. In particular, PostHoc implements and extends the PAL (Post-hoc Attribution Loci) analysis described in that work within a modular, command-line framework designed for reproducible analysis of genotype data.
 
