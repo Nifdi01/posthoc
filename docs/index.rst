@@ -18,7 +18,7 @@ The project currently includes:
 * phenotype simulation on real genotype matrices
 * baseline sparse logistic regression benchmarking
 * Integrated Gradients SNP attribution
-* PAL (Post-hoc Attribution Loci) discovery with null-model significance testing
+* PAL (Potentially Associated Loci) discovery with null-model significance testing
 * PLINK2-compatible genotype input and GWAS-style outputs
 * repeated-model analysis for robust locus discovery
 
