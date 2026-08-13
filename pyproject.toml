@@ -18,6 +18,8 @@ dependencies = [
   "captum>=0.7",
   "click>=8.1",
   "statsmodels>=0.14",
+  "pgenlib",
+  "pandas-plink",
 ]
 
 [project.scripts]
@@ -25,7 +27,6 @@ posthoc = "posthoc.cli:main"
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0", "pytest-cov", "black", "ruff"]
-genotype = ["pgenlib", "pandas-plink"]
 
 [tool.setuptools.packages.find]
 include = ["posthoc*"]
