@@ -14,7 +14,7 @@ try:
 
     release = _pkg_version("posthoc")
     version = ".".join(release.split(".")[:2])
-except Exception:
+except (ImportError, ModuleNotFoundError):
     release = version = "0.1.5"
 
 extensions = [
@@ -46,6 +46,10 @@ autodoc_mock_imports = ["captum", "shap"]
 
 napoleon_google_docstring = False
 napoleon_numpy_docstring = True
+
+napoleon_use_param = True
+napoleon_use_rtype = True
+napoleon_use_ivar = False
 
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
