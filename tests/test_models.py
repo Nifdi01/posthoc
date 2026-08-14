@@ -5,10 +5,8 @@ import pytest
 import torch
 
 from posthoc.models.base import GenotypeDataset, TrainConfig
-from posthoc.models.utils import make_split, train_model
-
 from posthoc.models.mlp import MLP, MLPConfig, build_mlp
-
+from posthoc.models.utils import make_split, train_model
 
 # ---------- fixtures ----------
 

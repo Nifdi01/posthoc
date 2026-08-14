@@ -5,12 +5,11 @@ import pandas as pd
 import pytest
 
 from posthoc.io.pheno_covar_reader import (
-    load_pheno,
-    load_covar,
-    align_samples,
     _read_plink_table,
+    align_samples,
+    load_covar,
+    load_pheno,
 )
-
 
 # ---------- fixtures ----------
 
@@ -160,7 +159,7 @@ def test_align_samples_without_covar(pheno_file):
     pheno = load_pheno(pheno_file)
     sample_ids = ["S1", "S2", "S3", "S4"]
 
-    keep_mask, aligned_pheno, aligned_covar = align_samples(sample_ids, pheno)
+    keep_mask, _aligned_pheno, aligned_covar = align_samples(sample_ids, pheno)
 
     assert aligned_covar is None
     # Only S3 excluded (missing pheno); no covar to exclude on.

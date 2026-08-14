@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import click
 
-from posthoc.commands.pal import pal
-from posthoc.commands.baseline import baseline
-from posthoc.commands.attribute import attribute
-from posthoc.commands.simulate_pheno import simulate_pheno
 from posthoc.commands._shared import setup_logging
+from posthoc.commands.attribute import attribute
+from posthoc.commands.baseline import baseline
+from posthoc.commands.pal import pal
+from posthoc.commands.simulate_pheno import simulate_pheno
 
 
 @click.group()

@@ -1,15 +1,14 @@
 from __future__ import annotations
 
 import logging
-import numpy as np
+from dataclasses import dataclass, replace
+
 import click
+import numpy as np
 
 from posthoc.io.genotype_reader import GenotypeData, read_pgen
-from dataclasses import replace, dataclass
-
 from posthoc.io.pheno_covar_reader import align_samples, load_covar, load_pheno
 from posthoc.qc.filters import run_qc
-
 
 logger = logging.getLogger(__name__)
 
