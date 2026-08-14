@@ -4,14 +4,12 @@ import logging
 import shutil
 import subprocess
 import tempfile
-from dataclasses import MISSING, dataclass, replace
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 import numpy as np
-import pandas as pd
 
 from posthoc.io.genotype_reader import GenotypeData
-
 
 logger = logging.getLogger(__name__)
 
@@ -124,7 +122,7 @@ def indep_pairwise(
         ]
 
         logger.info("Running: %s", " ".join(cmd))
-        result = subprocess.run(cmd, capture_output=True, text=True)
+        result = subprocess.run(cmd, capture_output=True, text=True, check=False)
         if result.returncode != 0:
             raise RuntimeError(f"plink2 --indep-pairwise failed:\n{result.stderr}")
 

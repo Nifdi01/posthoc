@@ -7,13 +7,8 @@ import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import log_loss, roc_auc_score
 
-from posthoc.commands._shared import load_and_prepare, subset_samples
-from posthoc.io import genotype_reader
-from posthoc.io.genotype_reader import read_pgen
-from posthoc.io.pheno_covar_reader import align_samples, load_covar, load_pheno
-from posthoc.qc.filters import run_qc
+from posthoc.commands._shared import load_and_prepare
 from posthoc.models.utils import make_split
-
 
 logger = logging.getLogger(__name__)
 

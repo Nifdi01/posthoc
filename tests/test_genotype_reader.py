@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
-from posthoc.io.genotype_reader import read_pgen
 
+from posthoc.io.genotype_reader import read_pgen
 
 TOY_PREFIX = "datasets/data/processed/chr22_subset"
 

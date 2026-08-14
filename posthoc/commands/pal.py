@@ -5,18 +5,17 @@ import logging
 import click
 import numpy as np
 
-from posthoc.commands._shared import load_and_prepare
-from posthoc.io.writer import write_pal
-from posthoc.models.base import TrainConfig, _ACTIVATIONS
-from posthoc.models.mlp import MLPConfig, build_mlp
-from posthoc.models.utils import train_model
 from posthoc.attribution.integrated_gradients import (
     IntegratedGradientsConfig,
     integrated_gradients_importance,
 )
 from posthoc.attribution.pal import PALConfig, compute_pal
 from posthoc.attribution.significance import SignificanceConfig, compute_pal_pvalues
-
+from posthoc.commands._shared import load_and_prepare
+from posthoc.io.writer import write_pal
+from posthoc.models.base import _ACTIVATIONS, TrainConfig
+from posthoc.models.mlp import MLPConfig, build_mlp
+from posthoc.models.utils import train_model
 
 logger = logging.getLogger(__name__)
 
