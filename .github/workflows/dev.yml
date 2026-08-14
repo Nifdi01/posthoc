@@ -42,9 +42,9 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install Plink 2
+      - name: Install PLINK2
         run: |
-          wget -q https://s3.amazonaws.com/plink2-assets/alpha6/plink2_linux_x86_64_20260504.zip -O plink2.zip
+          wget -q https://s3.amazonaws.com/plink2-assets/alpha7/plink2_linux_x86_64_20260808.zip -O plink2.zip
           unzip -q plink2.zip
           sudo mv plink2 /usr/local/bin/
           plink2 --version
