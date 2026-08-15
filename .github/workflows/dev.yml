@@ -49,13 +49,27 @@ jobs:
           sudo mv plink2 /usr/local/bin/
           plink2 --version
 
+      - name: Cache raw data
+        id: cache-raw
+        uses: actions/cache@v4
+        with:
+          path: datasets/data/raw
+          key: raw-data-v1-${{ hashFiles('scripts/prepare_data.sh') }}
+
+      - name: Cache processed chr22 subset
+        id: cache-processed
+        uses: actions/cache@v4
+        with:
+          path: datasets/data/processed
+          key: processed-data-v1-${{ hashFiles('scripts/prepare_data.sh') }}
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[dev,genotype]"
+          pip install -e ".[dev]"
 
       - name: Download and set up data
-        run: bash scripts/setup_test_data.sh
+        run: bash scripts/prepare_data.sh
 
       - name: Run tests
         run: pytest --cov=posthoc --cov-report=term-missing
