@@ -6,9 +6,9 @@ import pytest
 
 from posthoc.io.pheno_covar_reader import (
     _read_plink_table,
-    load_pheno,
-    load_covar,
     align_samples,
+    load_covar,
+    load_pheno,
 )
 
 
@@ -168,22 +168,22 @@ class TestAlignSamples:
     def test_basic_alignment_pheno_only(self):
         sample_ids = ["S1", "S2", "S3"]
         pheno = pd.Series({"S1": 1.0, "S2": 2.0, "S3": 3.0})
-        keep, aligned_pheno, aligned_covar = align_samples(sample_ids, pheno)
+        keep, _aligned_pheno, aligned_covar = align_samples(sample_ids, pheno)
         assert keep.tolist() == [True, True, True]
-        assert aligned_pheno.tolist() == [1.0, 2.0, 3.0]
+        assert _aligned_pheno.tolist() == [1.0, 2.0, 3.0]
         assert aligned_covar is None
 
     def test_pheno_missing_sample_excluded(self):
         sample_ids = ["S1", "S2", "S3"]
         pheno = pd.Series({"S1": 1.0, "S2": np.nan, "S3": 3.0})
-        keep, aligned_pheno, _ = align_samples(sample_ids, pheno)
+        keep, _aligned_pheno, _ = align_samples(sample_ids, pheno)
         assert keep.tolist() == [True, False, True]
-        assert aligned_pheno.tolist() == [1.0, 3.0]
+        assert _aligned_pheno.tolist() == [1.0, 3.0]
 
     def test_sample_not_in_pheno_excluded(self):
         sample_ids = ["S1", "S2", "S3"]
         pheno = pd.Series({"S1": 1.0, "S3": 3.0})  # S2 absent entirely
-        keep, aligned_pheno, _ = align_samples(sample_ids, pheno)
+        keep, _aligned_pheno, _ = align_samples(sample_ids, pheno)
         assert keep.tolist() == [True, False, True]
 
     def test_with_covar_intersection(self):
@@ -234,4 +234,3 @@ class TestAlignSamples:
         )
         _, _, aligned_covar = align_samples(sample_ids, pheno, covar)
         assert aligned_covar.shape == (2, 2)
-

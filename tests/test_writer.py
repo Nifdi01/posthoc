@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from posthoc.io.writer import write_glm, write_pal, GLM_COLUMNS, PAL_COLUMNS
+from posthoc.io.writer import GLM_COLUMNS, PAL_COLUMNS, write_glm, write_pal
 
 
 @pytest.fixture

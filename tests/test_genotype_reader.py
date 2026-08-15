@@ -241,4 +241,3 @@ class TestReadPgen:
             gd = read_pgen(str(prefix))
 
         assert gd.n_samples == 1
-
