@@ -11,10 +11,10 @@ from posthoc.io.genotype_reader import read_pgen
 from posthoc.simulation import PhenotypeModel, simulate
 from posthoc.simulation.utils import (
     allocate_causal_positions,
-    log_ratio_percentages,
     heritability_to_k,
-    validate_ratios,
+    log_ratio_percentages,
     resolve_snp_pool,
+    validate_ratios,
 )
 
 logger = logging.getLogger(__name__)
