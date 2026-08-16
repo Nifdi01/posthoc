@@ -9,6 +9,13 @@ import numpy as np
 
 from posthoc.io.genotype_reader import read_pgen
 from posthoc.simulation import PhenotypeModel, simulate
+from posthoc.simulation.utils import (
+    allocate_causal_positions,
+    log_ratio_percentages,
+    heritability_to_k,
+    validate_ratios,
+    resolve_snp_pool,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -18,39 +25,55 @@ logger = logging.getLogger(__name__)
     "--pfile", required=True, help="Prefix of PLINK2 .pgen/.pvar/.psam fileset."
 )
 @click.option(
-    "--additive",
-    "additive_terms",
-    type=(int, float),
-    multiple=True,
-    help="Additive causal SNP: INDEX EFFECT_SIZE. Repeatable.",
+    "--n-causal",
+    type=int,
+    required=True,
+    help="Total number of causal SNPs to allocate across dominant/recessive/"
+    "pair/triple effect types (Yelmen et al. used 100 and 1000).",
 )
 @click.option(
-    "--dominant",
-    "dominant_terms",
-    type=(int, float),
-    multiple=True,
-    help="Dominant causal SNP: INDEX EFFECT_SIZE. Repeatable.",
+    "--ratio-dominant",
+    type=float,
+    default=5.0,
+    show_default=True,
+    help="Relative allocation of causal SNPs to dominant effects.",
 )
 @click.option(
-    "--recessive",
-    "recessive_terms",
-    type=(int, float),
-    multiple=True,
-    help="Recessive causal SNP: INDEX EFFECT_SIZE. Repeatable.",
+    "--ratio-recessive",
+    type=float,
+    default=5.0,
+    show_default=True,
+    help="Relative allocation of causal SNPs to recessive effects.",
 )
 @click.option(
-    "--interaction2",
-    "interaction2_terms",
-    type=(int, int, float),
-    multiple=True,
-    help="Two-way interaction: INDEX_I INDEX_J EFFECT_SIZE. Repeatable.",
+    "--ratio-pair",
+    type=float,
+    default=4.0,
+    show_default=True,
+    help="Relative allocation of causal SNPs to two-way interaction terms "
+    "(SNP count, i.e. 2 SNPs per term).",
 )
 @click.option(
-    "--interaction3",
-    "interaction3_terms",
-    type=(int, int, int, float),
-    multiple=True,
-    help="Three-way interaction: INDEX_I INDEX_J INDEX_K EFFECT_SIZE. Repeatable.",
+    "--ratio-triple",
+    type=float,
+    default=6.0,
+    show_default=True,
+    help="Relative allocation of causal SNPs to three-way interaction terms "
+    "(SNP count, i.e. 3 SNPs per term).",
+)
+@click.option(
+    "--chromosome",
+    default=None,
+    help="Restrict causal-position sampling to this chromosome (e.g. '6'). "
+    "Omit for whole-genome sampling (paper's main SCZ simulation scenarios).",
+)
+@click.option(
+    "--snp-pool",
+    "snp_pool_path",
+    default=None,
+    type=click.Path(exists=True),
+    help="Path to a text file of variant IDs (one per line) to restrict "
+    "causal-position sampling to. Combinable with --chromosome.",
 )
 @click.option(
     "--logistic", "task_logistic", is_flag=True, help="Binary phenotype (case/control)."
@@ -60,7 +83,9 @@ logger = logging.getLogger(__name__)
     "--heritability",
     type=float,
     default=0.5,
-    help="Fraction of liability variance from genotype.",
+    show_default=True,
+    help="Fraction of liability variance from genotype. Internally converted "
+    "to the paper's noise scaling factor k = (1 - heritability) / heritability.",
 )
 @click.option(
     "--prevalence",
@@ -86,11 +111,13 @@ logger = logging.getLogger(__name__)
 )
 def simulate_pheno(
     pfile: str,
-    additive_terms: tuple[tuple[int, float], ...],
-    dominant_terms: tuple[tuple[int, float], ...],
-    recessive_terms: tuple[tuple[int, float], ...],
-    interaction2_terms: tuple[tuple[int, int, float], ...],
-    interaction3_terms: tuple[tuple[int, int, int, float], ...],
+    n_causal: int,
+    ratio_dominant: float,
+    ratio_recessive: float,
+    ratio_pair: float,
+    ratio_triple: float,
+    chromosome: str | None,
+    snp_pool_path: str | None,
     task_logistic: bool,
     task_linear: bool,
     heritability: float,
@@ -104,19 +131,9 @@ def simulate_pheno(
         raise click.UsageError("Specify exactly one of --logistic or --linear.")
     task = "logistic" if task_logistic else "linear"
 
-    if not any(
-        [
-            additive_terms,
-            dominant_terms,
-            recessive_terms,
-            interaction2_terms,
-            interaction3_terms,
-        ]
-    ):
-        raise click.UsageError(
-            "Specify at least one causal term via --additive/--dominant/"
-            "--recessive/--interaction2/--interaction3."
-        )
+    total_ratio = validate_ratios(
+        ratio_dominant, ratio_recessive, ratio_pair, ratio_triple
+    )
 
     logger.info("Loading genotypes from %s", pfile)
     data = read_pgen(pfile)
@@ -126,29 +143,44 @@ def simulate_pheno(
         logger.info("Recoding genotypes 0/1/2 -> -1/0/1")
         data = replace(data, genotypes=data.genotypes - 1)
 
-    def split(terms: tuple, n_idx: int) -> tuple[np.ndarray, np.ndarray]:
-        if not terms:
-            return np.array([], dtype=int), np.array([])
+    pool = resolve_snp_pool(data.variant_ids, chromosome, snp_pool_path)
+    logger.info(
+        "Causal-position pool: %d variants (chromosome=%s, snp_pool=%s)",
+        len(pool),
+        chromosome,
+        snp_pool_path,
+    )
 
-        arr = np.array(terms)
-        if n_idx == 1:
-            return arr[:, 0].astype(int), arr[:, 1]
-        idx = arr[:, :n_idx].astype(int)
-        eff = arr[:, n_idx]
-        return idx, eff
+    log_ratio_percentages(
+        ratio_dominant,
+        ratio_recessive,
+        ratio_pair,
+        ratio_triple,
+        total_ratio,
+        n_causal,
+    )
 
-    additive_idx, additive_eff = split(additive_terms, 1)
-    dominant_idx, dominant_eff = split(dominant_terms, 1)
-    recessive_idx, recessive_eff = split(recessive_terms, 1)
+    rng = np.random.default_rng(seed)
+    dominant_idx, recessive_idx, interaction_pairs, interaction_triples = (
+        allocate_causal_positions(
+            n_causal,
+            pool,
+            ratio_dominant,
+            ratio_recessive,
+            ratio_pair,
+            ratio_triple,
+            total_ratio,
+            rng,
+        )
+    )
 
-    interaction_pairs = [(i, j) for i, j, _ in interaction2_terms]
-    interaction_effects = np.array([e for _, _, e in interaction2_terms])
-    interaction_triples = [(i, j, k) for i, j, k, _ in interaction3_terms]
-    interaction_triple_effects = np.array([e for _, _, _, e in interaction3_terms])
+    # beta ~ N(0, 1) per Yelmen et al.
+    dominant_eff = rng.normal(0.0, 1.0, size=len(dominant_idx))
+    recessive_eff = rng.normal(0.0, 1.0, size=len(recessive_idx))
+    interaction_effects = rng.normal(0.0, 1.0, size=len(interaction_pairs))
+    interaction_triple_effects = rng.normal(0.0, 1.0, size=len(interaction_triples))
 
     model = PhenotypeModel(
-        additive_indices=additive_idx,
-        additive_effects=additive_eff,
         dominant_indices=dominant_idx,
         dominant_effects=dominant_eff,
         recessive_indices=recessive_idx,
@@ -163,10 +195,17 @@ def simulate_pheno(
         seed=seed,
     )
 
+    k = heritability_to_k(heritability)
     logger.info(
-        "Simulating phenotype: %d causal SNPs, heritability=%.2f, task=%s",
+        "Simulating phenotype: %d causal SNPs (%d dominant, %d recessive, "
+        "%d pairs, %d triples), heritability=%.3f (k=%.3f), task=%s",
         len(model.all_causal_indices()),
+        len(dominant_idx),
+        len(recessive_idx),
+        len(interaction_pairs),
+        len(interaction_triples),
         heritability,
+        k,
         task,
     )
     result = simulate(data, model)

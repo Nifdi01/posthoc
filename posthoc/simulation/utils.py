@@ -16,7 +16,7 @@ def heritability_to_k(heritability: float) -> float:
 
 def resolve_snp_pool(
     variant_df: pd.DataFrame,
-    chromosome: str,
+    chromosome: str | None,
     snp_pool_path: str | None,
 ) -> np.ndarray:
     """Return an array of eligible variant *positional indices* to sample
