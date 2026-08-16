@@ -10,13 +10,8 @@ from posthoc.io.genotype_reader import GenotypeData
 
 @dataclass
 class PhenotypeModel:
-    """Additive + dominant + recessive + interaction liability model,
+    """Dominant + recessive + interaction liability model,
     following Yelmen et al. (2026)."""
-
-    additive_indices: np.ndarray = field(
-        default_factory=lambda: np.array([], dtype=int)
-    )
-    additive_effects: np.ndarray = field(default_factory=lambda: np.array([]))
 
     dominant_indices: np.ndarray = field(
         default_factory=lambda: np.array([], dtype=int)
@@ -41,7 +36,6 @@ class PhenotypeModel:
 
     def __post_init__(self) -> None:
         pairs = [
-            (self.additive_indices, self.additive_effects),
             (self.dominant_indices, self.dominant_effects),
             (self.recessive_indices, self.recessive_effects),
         ]
@@ -61,8 +55,7 @@ class PhenotypeModel:
 
     def all_causal_indices(self) -> np.ndarray:
         """Union of every SNP index involved in any effect term."""
-        idx = set(self.additive_indices.tolist())
-        idx |= set(self.dominant_indices.tolist())
+        idx = set(self.dominant_indices.tolist())
         idx |= set(self.recessive_indices.tolist())
         for i, j in self.interaction_pairs:
             idx |= {i, j}
@@ -117,10 +110,6 @@ def simulate_phenotype(
     rng = np.random.default_rng(model.seed)
     n_samples = genotypes.shape[0]
     component = np.zeros(n_samples)
-
-    if len(model.additive_indices):
-        g = _fill_missing(genotypes[:, model.additive_indices])
-        component += g @ model.additive_effects
 
     if len(model.dominant_indices):
         g = _fill_missing(genotypes[:, model.dominant_indices])
