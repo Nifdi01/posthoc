@@ -89,7 +89,7 @@ def filter_geno(data: GenotypeData, max_missing: float) -> tuple[GenotypeData, i
     return _subset(data, keep), n_dropped
 
 
-def _find_plink2() -> str:
+def find_plink2() -> str:
     path = shutil.which("plink2")
     if path is None:
         raise RuntimeError(
@@ -106,7 +106,7 @@ def indep_pairwise(
     r2_threshold: float,
     plink2_path: str | None = None,
 ) -> list[str]:
-    plink2 = plink2_path or _find_plink2()
+    plink2 = plink2_path or find_plink2()
     with tempfile.TemporaryDirectory() as tempdir:
         out_prefix = str(Path(tempdir) / "prune")
         cmd = [

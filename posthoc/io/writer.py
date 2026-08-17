@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import subprocess
+import tempfile
 from pathlib import Path
 
 import numpy as np
@@ -170,3 +172,39 @@ def write_pal(
     out_df = out_df[PAL_COLUMNS]
 
     out_df.to_csv(out_path, sep="\t", index=False)
+
+
+def write_filtered_pgen(
+    pfile_prefix: str | Path,
+    keep_variant_ids: list[str],
+    out_prefix: str | Path,
+    plink2_path: str | None = None,
+) -> None:
+    """Write a new PLINK2 .pgen/.pvar/.psam fileset containing only the
+    given variant IDs, via `plink2 --extract ... --make-pgen`."""
+
+    out_prefix = Path(out_prefix)
+    out_prefix.parent.mkdir(parents=True, exist_ok=True)
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
+        f.write("\n".join(keep_variant_ids))
+        snplist_path = f.name
+
+    cmd = [
+        plink2_path,
+        "--pfile",
+        str(pfile_prefix),
+        "--extract",
+        snplist_path,
+        "--make-pgen",
+        "--out",
+        str(out_prefix),
+    ]
+
+    result = subprocess.run(cmd, capture_output=True, text=True, check=False)
+    if result.returncode != 0:
+        raise RuntimeError(f"plink2 --make-pgen failed:\n{result.stderr}")
+
+    pgen_path = out_prefix.with_suffix(".pgen")
+    if not pgen_path.exists():
+        raise RuntimeError(f"Expected plink2 output not found: {pgen_path}")
