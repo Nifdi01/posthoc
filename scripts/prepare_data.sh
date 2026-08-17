@@ -17,5 +17,8 @@ cd - >/dev/null
 
 # Extract chr22 subset only — no QC/allele-frequency/missingness filtering
 plink2 --pfile "$RAW_DIR/all_hg38" vzs \
-  --chr 22 --from-bp 15000000 --to-bp 25000000 \
+  --chr 22 --from-bp 10000000 --to-bp 25000000 \
+  --set-all-var-ids '@:#:$r:$a' \
+  --new-id-max-allele-len 1000 \
+  --rm-dup exclude-all \
   --make-pgen --out "$OUT_DIR/chr22_subset"
