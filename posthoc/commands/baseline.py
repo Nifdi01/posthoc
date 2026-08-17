@@ -28,9 +28,6 @@ logger = logging.getLogger(__name__)
 @click.option(
     "--covar", default=None, type=click.Path(exists=True), help="Covariate file."
 )
-@click.option("--maf", "min_maf", type=float, default=0.0)
-@click.option("--geno", "max_missing", type=float, default=1.0)
-@click.option("--indep-pairwise", type=(int, int, float), default=None)
 @click.option("--val-fraction", type=float, default=0.2)
 @click.option("--seed", type=int, default=0)
 def baseline(
@@ -38,9 +35,6 @@ def baseline(
     pheno: str,
     pheno_name: str | None,
     covar: str | None,
-    min_maf: float,
-    max_missing: float,
-    indep_pairwise: tuple[int, int, float] | None,
     val_fraction: float,
     seed: int,
 ) -> None:
@@ -51,9 +45,6 @@ def baseline(
         pheno_name,
         covar,
         "logistic",
-        min_maf,
-        max_missing,
-        indep_pairwise,
     )
 
     data = loaded.data

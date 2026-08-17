@@ -8,7 +8,6 @@ import numpy as np
 
 from posthoc.io.genotype_reader import GenotypeData, read_pgen
 from posthoc.io.pheno_covar_reader import align_samples, load_covar, load_pheno
-from posthoc.qc.filters import run_qc
 
 logger = logging.getLogger(__name__)
 
@@ -39,9 +38,6 @@ def load_and_prepare(
     pheno_name: str | None,
     covar: str | None,
     task: str,
-    min_maf: float,
-    max_missing: float,
-    indep_pairwise: tuple[int, int, float] | None,
 ) -> LoadedData:
 
     logger.info(f"Loading genotypes from {pfile}")
@@ -77,16 +73,5 @@ def load_and_prepare(
         len(keep_mask),
         data.n_samples,
     )
-
-    qc_results = run_qc(
-        data,
-        min_maf=min_maf,
-        max_missing=max_missing,
-        indep_pairwise_params=indep_pairwise,
-        pfile_prefix=pfile if indep_pairwise is not None else None,
-    )
-
-    data = qc_results.data
-    logger.info(qc_results.summary())
 
     return LoadedData(data, align_pheno, align_covar)

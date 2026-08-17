@@ -67,22 +67,6 @@ def _case_mas(
 )
 @click.option("--model", "model_name", type=click.Choice(["mlp"]), default="mlp")
 @click.option(
-    "--maf", "min_maf", type=float, default=0.0, help="Minimum minor allele frequency."
-)
-@click.option(
-    "--geno",
-    "max_missing",
-    type=float,
-    default=1.0,
-    help="Max per-variant missingness.",
-)
-@click.option(
-    "--indep-pairwise",
-    type=(int, int, float),
-    default=None,
-    help="LD pruning: WINDOW_SIZE STEP R2_THRESHOLD (requires plink2 on PATH).",
-)
-@click.option(
     "--hidden-dims", default="256,64", help="Comma-separated MLP hidden layer sizes."
 )
 @click.option("--dropout", default=0.2, help="Dropout parameter of neural network")
@@ -148,9 +132,6 @@ def pal(
     task_logistic: bool,
     task_linear: bool,
     model_name: str,
-    min_maf: float,
-    max_missing: float,
-    indep_pairwise: tuple[int, int, float] | None,
     hidden_dims: str,
     max_epochs: int,
     patience: int,
@@ -179,9 +160,7 @@ def pal(
     if model_name != "mlp":
         raise click.UsageError(f"Unkown model: {model_name}")
 
-    loaded = load_and_prepare(
-        pfile, pheno, pheno_name, covar, task, min_maf, max_missing, indep_pairwise
-    )
+    loaded = load_and_prepare(pfile, pheno, pheno_name, covar, task)
 
     data = loaded.data
     genotypes = data.genotypes

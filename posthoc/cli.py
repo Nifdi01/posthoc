@@ -6,6 +6,7 @@ from posthoc.commands._shared import setup_logging
 from posthoc.commands.attribute import attribute
 from posthoc.commands.baseline import baseline
 from posthoc.commands.pal import pal
+from posthoc.commands.qc import qc
 from posthoc.commands.simulate_pheno import simulate_pheno
 
 
@@ -19,6 +20,7 @@ main.add_command(attribute)
 main.add_command(baseline)
 main.add_command(simulate_pheno)
 main.add_command(pal)
+main.add_command(qc)
 
 if __name__ == "__main__":
     main()
