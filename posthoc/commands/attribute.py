@@ -11,7 +11,7 @@ from posthoc.attribution.integrated_gradients import (
 )
 from posthoc.commands._shared import load_and_prepare
 from posthoc.io.writer import write_glm
-from posthoc.models.base import TrainConfig
+from posthoc.models.base import _ACTIVATIONS, TrainConfig
 from posthoc.models.mlp import MLPConfig, build_mlp
 from posthoc.models.utils import train_model
 
@@ -47,28 +47,15 @@ logger = logging.getLogger(__name__)
     default="integrated_gradients",
 )
 @click.option(
-    "--maf", "min_maf", type=float, default=0.0, help="Minimum minor allele frequency."
-)
-@click.option(
-    "--geno",
-    "max_missing",
-    type=float,
-    default=1.0,
-    help="Max per-variant missingness.",
-)
-@click.option(
-    "--indep-pairwise",
-    type=(int, int, float),
-    default=None,
-    help="LD pruning: WINDOW_SIZE STEP R2_THRESHOLD (requires plink2 on PATH).",
-)
-@click.option(
     "--hidden-dims", default="256,64", help="Comma-separated MLP hidden layer sizes."
 )
 @click.option("--dropout", default=0.2, help="Dropout parameter of neural network")
 @click.option("--epochs", "max_epochs", type=int, default=200)
 @click.option("--patience", type=int, default=15)
 @click.option("--lr", type=float, default=1e-4)
+@click.option("--activation", type=click.Choice(_ACTIVATIONS.keys()), default="relu")
+@click.option("--weight-decay", "weight_decay", type=float, default=1e-4)
+@click.option("--data-dropout", "data_dropout", is_flag=True, default=False)
 @click.option("--val-fraction", type=float, default=0.2)
 @click.option(
     "--n-steps", type=int, default=50, help="Integrated Gradients interpolation steps."
@@ -93,14 +80,14 @@ def attribute(
     task_linear: bool,
     model_name: str,
     attribution_name: str,
-    min_maf: float,
-    max_missing: float,
-    indep_pairwise: tuple[int, int, float] | None,
     hidden_dims: str,
     max_epochs: int,
     patience: int,
     lr: float,
     dropout: float,
+    data_dropout: bool,
+    activation: str,
+    weight_decay: float,
     val_fraction: float,
     n_steps: int,
     ig_baseline: str,
@@ -114,7 +101,11 @@ def attribute(
     task = "logistic" if task_logistic else "linear"
 
     loaded = load_and_prepare(
-        pfile, pheno, pheno_name, covar, task, min_maf, max_missing, indep_pairwise
+        pfile,
+        pheno,
+        pheno_name,
+        covar,
+        task,
     )
 
     data = loaded.data
@@ -130,7 +121,12 @@ def attribute(
     model = build_mlp(
         n_snps=data.n_variants,
         n_covariates=n_covariates,
-        config=MLPConfig(hidden_dims=hidden_dims_list, dropout=dropout),
+        config=MLPConfig(
+            hidden_dims_list,
+            dropout=dropout,
+            data_dropout=data_dropout,
+            activation=activation,
+        ),
     )
 
     train_config = TrainConfig(
@@ -138,6 +134,7 @@ def attribute(
         val_fraction=val_fraction,
         max_epochs=max_epochs,
         patience=patience,
+        weight_decay=weight_decay,
         lr=lr,
         device=device,
         seed=seed,
