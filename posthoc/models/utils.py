@@ -148,7 +148,9 @@ def train_model(
         train_losses.append(epoch_train_loss)
         val_losses.append(epoch_val_loss)
 
-        auc = compute_val_auc(model, val_loader, device=config.device)
+        if config.task == "logistic":
+            auc = compute_val_auc(model, val_loader, device=config.device)
+        auc = float("nan")
 
         logger.debug(
             "Epoch %d: train_loss=%.4f val_loss=%.4f AUC=%.4f",
