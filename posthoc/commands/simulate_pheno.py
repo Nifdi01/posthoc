@@ -140,8 +140,12 @@ def simulate_pheno(
     logger.info("Loaded %d samples x %d variants", data.n_samples, data.n_variants)
 
     if recode_centered:
-        logger.info("Recoding genotypes 0/1/2 -> -1/0/1")
-        data = replace(data, genotypes=data.genotypes - 1)
+        logger.info("Recoding genotypes 0/1/2 -> -1/0/1 (missing values preserved)")
+        geno = data.genotypes.copy()
+        missing_mask = geno == -9
+        geno = geno - 1
+        geno[missing_mask] = -9
+        data = replace(data, genotypes=geno)
 
     pool = resolve_snp_pool(data.variant_ids, chromosome, snp_pool_path)
     logger.info(

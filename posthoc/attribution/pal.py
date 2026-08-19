@@ -39,7 +39,7 @@ def stack_mas(mas_list: list[np.ndarray]) -> np.ndarray:
 
 def _ld_clump(
     detected_per_model: list[np.ndarray], genotypes: np.ndarray, config: PALConfig
-) -> tuple[list[np.ndarray], dict[int, int]]:
+) -> dict[int, int]:
     n_samples, n_snps = genotypes.shape
     W = config.ld_window
     threshold = config.ld_r2_threshold
@@ -78,7 +78,7 @@ def _ld_clump(
     for p in flattened:
         element_counts[p] = element_counts.get(p, 0) + 1
 
-    return clumped, element_counts
+    return element_counts
 
 
 def compute_pal(
@@ -103,9 +103,9 @@ def compute_pal(
         np.nonzero(A[a] > per_model_thetas[a])[0] for a in range(n_models)
     ]
 
-    _, element_counts = _ld_clump(detected_per_model, genotypes, config)
+    element_counts = _ld_clump(detected_per_model, genotypes, config)
 
-    global_theta = per_model_thetas.mean()
+    global_theta = np.percentile(mu, config.theta_percentile)
     amas = mu.copy()
     above = np.nonzero(mu > global_theta)[0]
 
@@ -115,11 +115,17 @@ def compute_pal(
 
     pal_amas = np.nonzero(amas > global_theta)[0]
 
-    common = set(detected_per_model[0]) if n_models else set()
-    for a in range(1, n_models):
-        common &= set(detected_per_model[a])
+    if n_models and config.min_model_occurence is None:
+        required = n_models
+    elif n_models:
+        required = config.min_model_occurence
+    else:
+        required = 0
 
-    pal_common = np.array(sorted(common), dtype=int)
+    pal_common = np.array(
+        sorted(pos for pos, cnt in element_counts.items() if cnt >= required), dtype=int
+    )
+
     logger.info(
         "PAL: %d models, theta_percentile=%.2f -> PAL_Common=%d, PAL_AMAS=%d SNPs",
         n_models,

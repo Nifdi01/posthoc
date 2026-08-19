@@ -3,6 +3,7 @@ from typing import cast
 
 import numpy as np
 import torch
+from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import train_test_split
 from torch import nn
 from torch.utils.data import DataLoader, Subset
@@ -29,13 +30,54 @@ def make_split(
     return cast(np.ndarray, train_idx), cast(np.ndarray, val_idx)
 
 
-def get_loss_fn(task: str) -> nn.Module:
+def get_loss_fn(task: str, pos_weight: torch.Tensor | None = None) -> nn.Module:
     if task == "logistic":
-        return nn.BCEWithLogitsLoss()
+        return nn.BCEWithLogitsLoss(pos_weight=pos_weight)
     elif task == "linear":
         return nn.MSELoss()
     else:
         raise ValueError(f"Unknown task: {task}. Expected 'logistic' or 'linear'.")
+
+
+def compute_val_auc(
+    model: nn.Module,
+    val_loader: DataLoader,
+    device: str,
+) -> float:
+    """Compute AUC-ROC on a validation set. Unlike weighted BCE loss, this is
+    invariant to pos_weight/class balance choices, so it's the right metric
+    to compare across runs with different pos_weight or prevalence settings.
+
+    Returns float('nan') if the val set contains only one class (AUC is
+    undefined in that case) — check for this before trusting the result,
+    especially with small/imbalanced val splits.
+    """
+    model.eval()
+    all_probs = []
+    all_labels = []
+
+    with torch.no_grad():
+        for x, y in val_loader:
+            x = x.to(device)
+            logits = model(x).squeeze(-1)
+            probs = torch.sigmoid(logits)
+            all_probs.append(probs.cpu().numpy())
+            all_labels.append(y.numpy())
+
+    y_true = np.concatenate(all_labels)
+    y_prob = np.concatenate(all_probs)
+
+    if len(np.unique(y_true)) < 2:
+        logger.warning(
+            "Cannot compute AUC: validation set contains only one class "
+            "(%d positives, %d total).",
+            int(y_true.sum()),
+            len(y_true),
+        )
+        return float("nan")
+
+    auc = roc_auc_score(y_true, y_prob)
+    return auc
 
 
 def train_model(
@@ -66,9 +108,11 @@ def train_model(
     optimizer = torch.optim.AdamW(
         model.parameters(), lr=config.lr, weight_decay=config.weight_decay
     )
+
     loss_fn = get_loss_fn(config.task)
 
     best_val_loss = float("inf")
+    best_auc_score = float("-inf")
     best_state = None
     epoch_without_improvement = 0
     train_losses, val_losses = [], []
@@ -104,15 +148,19 @@ def train_model(
         train_losses.append(epoch_train_loss)
         val_losses.append(epoch_val_loss)
 
+        auc = compute_val_auc(model, val_loader, device=config.device)
+
         logger.debug(
-            "Epoch %d: train_loss=%.4f val_loss=%.4f",
+            "Epoch %d: train_loss=%.4f val_loss=%.4f AUC=%.4f",
             epoch,
             epoch_train_loss,
             epoch_val_loss,
+            auc,
         )
 
         if epoch_val_loss < best_val_loss:
             best_val_loss = epoch_val_loss
+            best_auc_score = auc
             best_state = {k: v.clone() for k, v in model.state_dict().items()}
             epoch_without_improvement = 0
         else:
@@ -120,9 +168,10 @@ def train_model(
             if epoch_without_improvement >= config.patience:
                 stopped_epoch = epoch
                 logger.info(
-                    "Early stopping at epoch %d (best val_loss=%.4f)",
+                    "Early stopping at epoch %d (best val_loss=%.4f, best AUC=%.4f)",
                     epoch,
                     best_val_loss,
+                    best_auc_score,
                 )
                 break
     if best_state is not None:
@@ -131,6 +180,7 @@ def train_model(
     return TrainResult(
         model=model,
         best_val_loss=best_val_loss,
+        best_auc_score=best_auc_score,
         train_losses=train_losses,
         val_losses=val_losses,
         stopped_epoch=stopped_epoch,
