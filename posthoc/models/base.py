@@ -71,6 +71,7 @@ class TrainConfig:
 class TrainResult:
     model: nn.Module
     best_val_loss: float
+    best_auc_score: float
     train_losses: list[float]
     val_losses: list[float]
     stopped_epoch: int

@@ -150,9 +150,10 @@ def attribute(
 
     train_result = train_model(model, genotypes, phenotype, covariates, train_config)
     logger.info(
-        "Training done: stopped at epoch %d, best val loss %.4f",
+        "Training done: stopped at epoch %d, best val loss %.4f, best auc score %.4f",
         train_result.stopped_epoch,
         train_result.best_val_loss,
+        train_result.best_auc_score,
     )
 
     if attribution_name != "integrated_gradients":
