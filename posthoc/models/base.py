@@ -2,60 +2,24 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import Literal
+from typing import Literal, Protocol
 
 import numpy as np
 import torch
 from torch import nn
-from torch.utils.data import Dataset
 
 logger = logging.getLogger(__name__)
 
 
-class GenotypeDataset(Dataset):
-    MISSING_CODE = -9
-
-    def __init__(
-        self,
-        genotypes: np.ndarray,
-        phenotype: np.ndarray,
-        covariates: np.ndarray | None = None,
-    ):
-        geno = genotypes.astype(np.float32).copy()
-        missing_mask = geno == self.MISSING_CODE
-
-        if missing_mask.any():
-            variant_means = np.where(missing_mask, np.nan, geno)
-            variant_means = np.nanmean(variant_means, axis=0)
-            fill = np.take(variant_means, np.where(missing_mask)[1])
-            geno[missing_mask] = fill
-            logger.info(
-                "Mean-imputed %d missing genotype calls (%.3f%% of matrix)",
-                missing_mask.sum(),
-                100 * missing_mask.mean(),
-            )
-
-        self.genotypes = torch.from_numpy(geno)
-        self.phenotype = torch.from_numpy(phenotype.astype(np.float32))
-        self.covariates = (
-            torch.from_numpy(covariates.astype(np.float32))
-            if covariates is not None
-            else None
-        )
-
-    def __len__(self) -> int:
-        return self.genotypes.shape[0]
-
-    def __getitem__(self, idx: int):
-        x = self.genotypes[idx]
-        if self.covariates is not None:
-            x = torch.cat([x, self.covariates[idx]], dim=0)
-        y = self.phenotype[idx]
-        return x, y
-
-
 @dataclass
 class TrainConfig:
+    """
+    Config for the training loop (optimizer, schedule, splits).
+
+    Deliberately model-agnostic. Model-specific knobs (layer sizes, kernel
+    sizes, etc.) belong in that model's own config dataclass, e.g. MLPConfig.
+    """
+
     task: Literal["logistic", "linear"] = "logistic"
     val_fraction: float = 0.2
     batch_size: int = 64
@@ -94,3 +58,31 @@ _ACTIVATIONS: dict[str, type[nn.Module]] = {
     "gelu": nn.GELU,
     "lrelu": nn.LeakyReLU,
 }
+
+
+class TrainStrategy(Protocol):
+    """
+    Encapsulates how a single batch is turned into predictions and a loss.
+
+    Trainer composes with a TrainStrategy instead of assuming a model's
+    forward signature or loss. Most models can use a shared default
+    strategy (see strategy.py); a model with unusual training needs
+    (multi-input forward, auxiliary losses, custom metrics) supplies its
+    own implementation of this protocol instead of forking the training
+    loop in Trainer.
+    """
+
+    def compute_loss(
+        self, model: nn.Module, x: torch.Tensor, y: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor]: ...
+
+    def metric(self, y_true: np.ndarray, y_pred_raw: np.ndarray) -> float: ...
+
+
+class ModelFactory(Protocol):
+    """
+    A model family (MLP, CNN, ...) implements this to build itself from
+    its own config. Nothing needs to subclass a common base model.
+    """
+
+    def build(self, n_snps: int, n_covariates: int = 0) -> nn.Module: ...
