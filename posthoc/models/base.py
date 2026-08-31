@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import Literal, Protocol
+from typing import Literal, Protocol, runtime_checkable
 
 import numpy as np
 import torch
@@ -60,6 +60,7 @@ _ACTIVATIONS: dict[str, type[nn.Module]] = {
 }
 
 
+@runtime_checkable
 class TrainStrategy(Protocol):
     """
     Encapsulates how a single batch is turned into predictions and a loss.
@@ -79,6 +80,7 @@ class TrainStrategy(Protocol):
     def metric(self, y_true: np.ndarray, y_pred_raw: np.ndarray) -> float: ...
 
 
+@runtime_checkable
 class ModelFactory(Protocol):
     """
     A model family (MLP, CNN, ...) implements this to build itself from
