@@ -32,3 +32,27 @@ class LogisticStrategy:
             return -1.0
         probs = 1.0 / (1.0 + np.exp(-y_pred_raw))
         return float(roc_auc_score(y_true, probs))
+
+
+class LinearStrategy:
+    def __init__(self):
+        self.loss_fn = nn.MSELoss()
+
+    def compute_loss(
+        self, model: nn.Module, x: torch.Tensor, y: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        logits = model(x).squeeze(-1)
+        loss = self.loss_fn(logits, y)
+        return loss, logits
+
+    def metric(self, y_true: np.ndarray, y_pred_raw: np.ndarray) -> float:
+        return -1.0
+
+
+def default_strategy_for_task(task: str):
+    if task == "logistic":
+        return LogisticStrategy()
+    elif task == "linear":
+        return LinearStrategy()
+    else:
+        raise ValueError(f"Unkown task: {task}. Expected: logistic or linear")
