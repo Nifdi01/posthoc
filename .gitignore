@@ -219,3 +219,6 @@ __marimo__/
 
 # Genome Data
 data/
+
+# Results
+results/
